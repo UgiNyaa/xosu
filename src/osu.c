@@ -1,8 +1,8 @@
 #include <stdio.h>
 #include <stdlib.h>
 
-#include <GL\glew.h>
-#include <GLFW\glfw3.h>
+#include <GL/glew.h>
+#include <GLFW/glfw3.h>
 
 #include "gl-matrix.h"
 
@@ -79,7 +79,7 @@ int main(int argc, char* argv[]) {
 		glUseProgram(pID);
 
 		glUniformMatrix4fv(mvpID, 1, GL_FALSE, mvp);
-		glUniform1ui(tID, (GLuint)(glfwGetTime() * 1000));
+		glUniform1f(tID, (float)glfwGetTime());
 
 		glBindVertexArray(vao);
 		glEnableVertexAttribArray(0);
@@ -106,11 +106,11 @@ GLuint init_shader_program() {
 		"#version 330 core\n"
 		"\n"
 		"layout(location = 0) in vec2 vs_circles;\n"
-		"layout(location = 1) in uint vs_hittime;\n"
+		"layout(location = 1) in float vs_hittime;\n"
 		"\n"
 		"uniform mat4 MVP;\n"
 		"\n"
-		"out uint gs_hittime;\n"
+		"out float gs_hittime;\n"
 		"\n"
 		"void main() {\n"
 		"	gl_Position = MVP * vec4(vs_circles, 0.0, 1.0);\n"
@@ -141,16 +141,16 @@ GLuint init_shader_program() {
 		"layout(points) in;\n"
 		"layout(triangle_strip, max_vertices = 4) out;\n"
 		"\n"
-		"in uint gs_hittime[];\n"
+		"in float gs_hittime[];\n"
 		"\n"
 		"uniform mat4 MVP;\n"
 		"\n"
-		"out uint fs_hittime;\n"
+		"flat out float fs_hittime;\n"
 		"\n"
 		"void main() {\n"
 		"	fs_hittime = gs_hittime[0];\n"
 		"	\n"
-		"	gl_Position = gl_in[0].gl_Position + MVP * vec4(-2.5, -2.5 + float(gs_hittime[0]), 0.0, 0.0);\n"
+		"	gl_Position = gl_in[0].gl_Position + MVP * vec4(-2.5, -2.5, 0.0, 0.0);\n"
 		"	EmitVertex();\n"
 		"	\n"
 		"	gl_Position = gl_in[0].gl_Position + MVP * vec4(-2.5, 2.5, 0.0, 0.0);\n"
@@ -185,15 +185,19 @@ GLuint init_shader_program() {
 	const char* fragment_shader_code =
 		"#version 330 core\n"
 		"\n"
-		"in uint fs_hittime;\n"
+		"flat in float fs_hittime;\n"
 		"\n"
-		"uniform uint time;\n"
+		"uniform float time;\n"
 		"\n"
 		"out vec4 color;\n"
 		"\n"
 		"void main() {\n"
-		"	float hittime = float(fs_hittime);\n"
+		"	float sigma = 0.2;\n"
+		"	float left = (1.0/(2.5*sigma));\n"
+		"	float right = exp( -(1.0/2.0)*((time-fs_hittime)/sigma)*((time-fs_hittime)/sigma) );\n"
 		"	color = vec4(1.0, 1.0, 1.0, 1.0);\n"
+		"	color.a = left * exp( -(1.0/2.0) * ((fs_hittime-time)/sigma)*((fs_hittime-time)/sigma) );\n"
+		//"	color.a = 0.5;\n"
 		"}\n\n";
 	glShaderSource(fsID, 1, &fragment_shader_code, NULL);
 	glCompileShader(fsID);
@@ -244,7 +248,7 @@ GLuint init_vao(GLuint* circlebuffer, GLuint* timebuffer) {
 	glVertexAttribPointer(0, 2, GL_FLOAT, GL_FALSE, 0, (void*)0);
 
 	// corrupted data!
-	GLuint time_data[3] = { 1, 2, 3 };
+	GLfloat time_data[3] = { 3.0f, 5.0f, 8.0f };
 	glGenBuffers(1, timebuffer);
 	glBindBuffer(GL_ARRAY_BUFFER, *timebuffer);
 	glBufferData(
