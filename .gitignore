@@ -1,0 +1,48 @@
+# Prerequisites
+*.d
+
+# Compiled Object files
+*.slo
+*.lo
+*.o
+*.obj
+
+# Precompiled Headers
+*.gch
+*.pch
+
+# Compiled Dynamic libraries
+*.dylib
+*.so
+*.dll
+
+# Fortran module files
+*.mod
+*.smod
+
+# Compiled Static libraries
+*.lai
+*.la
+*.a
+*.lib
+
+# Executables
+*.exe
+*.out
+*.app
+
+# Build Directory
+[Bb]uild/*
+.vscode/*
+
+# Dolphin automatically produces .directory file
+.directory
+
+# KDevelop Project files
+*.kdev4
+
+# vim swp files
+*.swp
+
+# Windows debugging directory
+Win32/*
