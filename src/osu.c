@@ -5,6 +5,7 @@
 #include <GLFW/glfw3.h>
 
 #include "gl-matrix.h"
+#include "incbin.h"
 
 #define WIDTH 1280
 #define HEIGHT 720
@@ -96,28 +97,17 @@ int main(int argc, char* argv[]) {
 	}
 }
 
+INCBIN(VertexShader, "glsl/vs.glsl");
+INCBIN(GeometryShader, "glsl/gs.glsl");
+INCBIN(FragmentShader, "glsl/fs.glsl");
 GLuint init_shader_program() {
 	GLint success = 0, logSize = 0;
 	GLuint vsID = glCreateShader(GL_VERTEX_SHADER);
 	GLuint gsID = glCreateShader(GL_GEOMETRY_SHADER);
 	GLuint fsID = glCreateShader(GL_FRAGMENT_SHADER);
 
-	const char* vertex_shader_code =
-		"#version 330 core\n"
-		"\n"
-		"layout(location = 0) in vec2 vs_circles;\n"
-		"layout(location = 1) in float vs_hittime;\n"
-		"\n"
-		"uniform mat4 MVP;\n"
-		"\n"
-		"out float gs_hittime;\n"
-		"\n"
-		"void main() {\n"
-		"	gl_Position = MVP * vec4(vs_circles, 0.0, 1.0);\n"
-		"	\n"
-		"	gs_hittime = vs_hittime;\n"
-		"}\n\n";
-	glShaderSource(vsID, 1, &vertex_shader_code, NULL);
+	const char* vs_code[1] = {gVertexShaderData};
+	glShaderSource(vsID, 1, vs_code, &gVertexShaderSize);
 	glCompileShader(vsID);
 
 	glGetShaderiv(vsID, GL_COMPILE_STATUS, &success);
@@ -127,44 +117,15 @@ GLuint init_shader_program() {
 		char* log = malloc(logSize);
 		glGetShaderInfoLog(vsID, logSize, &logSize, log);
 
+		printf("vs");
 		printf(log);
 		free(log);
 
 		exit(-1);
 	}
 
-	printf(vertex_shader_code);
-
-	const char* geometry_shader_code =
-		"#version 330 core\n"
-		"\n"
-		"layout(points) in;\n"
-		"layout(triangle_strip, max_vertices = 4) out;\n"
-		"\n"
-		"in float gs_hittime[];\n"
-		"\n"
-		"uniform mat4 MVP;\n"
-		"\n"
-		"flat out float fs_hittime;\n"
-		"\n"
-		"void main() {\n"
-		"	fs_hittime = gs_hittime[0];\n"
-		"	\n"
-		"	gl_Position = gl_in[0].gl_Position + MVP * vec4(-2.5, -2.5, 0.0, 0.0);\n"
-		"	EmitVertex();\n"
-		"	\n"
-		"	gl_Position = gl_in[0].gl_Position + MVP * vec4(-2.5, 2.5, 0.0, 0.0);\n"
-		"	EmitVertex();\n"
-		"	\n"
-		"	gl_Position = gl_in[0].gl_Position + MVP * vec4(2.5, -2.5, 0.0, 0.0);\n"
-		"	EmitVertex();\n"
-		"	\n"
-		"	gl_Position = gl_in[0].gl_Position + MVP * vec4(2.5, 2.5, 0.0, 0.0);\n"
-		"	EmitVertex();\n"
-		"	\n"
-		"	EndPrimitive();\n"
-		"}\n\n";
-	glShaderSource(gsID, 1, &geometry_shader_code, NULL);
+	const char* gs_code[1] = {gGeometryShaderData};
+	glShaderSource(gsID, 1, gs_code, &gGeometryShaderSize);
 	glCompileShader(gsID);
 
 	glGetShaderiv(gsID, GL_COMPILE_STATUS, &success);
@@ -174,32 +135,15 @@ GLuint init_shader_program() {
 		char* log = malloc(logSize);
 		glGetShaderInfoLog(gsID, logSize, &logSize, log);
 
+		printf("gs");
 		printf(log);
 		free(log);
 
 		exit(-1);
 	}
 
-	printf(geometry_shader_code);
-
-	const char* fragment_shader_code =
-		"#version 330 core\n"
-		"\n"
-		"flat in float fs_hittime;\n"
-		"\n"
-		"uniform float time;\n"
-		"\n"
-		"out vec4 color;\n"
-		"\n"
-		"void main() {\n"
-		"	float sigma = 0.2;\n"
-		"	float left = (1.0/(2.5*sigma));\n"
-		"	float right = exp( -(1.0/2.0)*((time-fs_hittime)/sigma)*((time-fs_hittime)/sigma) );\n"
-		"	color = vec4(1.0, 1.0, 1.0, 1.0);\n"
-		"	color.a = left * exp( -(1.0/2.0) * ((fs_hittime-time)/sigma)*((fs_hittime-time)/sigma) );\n"
-		//"	color.a = 0.5;\n"
-		"}\n\n";
-	glShaderSource(fsID, 1, &fragment_shader_code, NULL);
+	const char* fs_code[1] = {gFragmentShaderData};
+	glShaderSource(fsID, 1, fs_code, &gFragmentShaderSize);
 	glCompileShader(fsID);
 
 	glGetShaderiv(fsID, GL_COMPILE_STATUS, &success);
@@ -209,13 +153,13 @@ GLuint init_shader_program() {
 		char* log = malloc(logSize);
 		glGetShaderInfoLog(fsID, logSize, &logSize, log);
 
+		printf("fs");
 		printf(log);
 		free(log);
 
 		exit(-1);
 	}
 
-	printf(fragment_shader_code);
 
 	GLuint pID = glCreateProgram();
 	glAttachShader(pID, vsID);
