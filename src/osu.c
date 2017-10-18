@@ -6,12 +6,14 @@
 
 #include "gl-matrix.h"
 #include "incbin.h"
+#include "lodepng.h"
 
 #define WIDTH 1280
 #define HEIGHT 720
 
 GLuint init_shader_program();
 GLuint init_vao(GLuint* vertexbuffer, GLuint* elementbuffer);
+void init_textures(GLuint* circleTex);
 
 int main(int argc, char* argv[]) {
 	if (!glfwInit()) {
@@ -57,21 +59,25 @@ int main(int argc, char* argv[]) {
 	GLuint circlebuffer, timebuffer;
 	GLuint vao = init_vao(&circlebuffer, &timebuffer);
 
+	GLuint circletexture;
+	init_textures(&circletexture);
+
 	GLuint mvpID = glGetUniformLocation(pID, "MVP");
-	GLuint tID = glGetUniformLocation(pID, "time");
+	GLuint circleTexID = glGetUniformLocation(pID, "circleTexture");
 
 	glfwSetTime(0.0);
 	for (;;) {
 		glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
 		float projection[16];
-		mat4_ortho(-WIDTH/2.0f/10, WIDTH/2.0f/10, -HEIGHT/2.0f/10, HEIGHT/2.0f/10, 0.1, 10, projection);
+		mat4_ortho(-WIDTH/2.0f/10, WIDTH/2.0f/10, -HEIGHT/2.0f/10, HEIGHT/2.0f/10, 0.0f, 1.0f, projection);
 		//mat4_perspective(1.5f, 16.0f / 9.0f, 1.0f, 1000.0f, projection);
 
-		float eye[3] = { 0.0f, 0.0f, 5.0f };
+		float eye[3] = { 0.0f, 0.0f, -3.0f };
 		float center[3] = { 0.0f, 0.0f, 0.0f };
 		float up[3] = { 0.0f, 1.0f, 0.0f };
 		float view[16];
+		eye[2] = (float)glfwGetTime() - 3.0f;
 		mat4_lookAt(eye, center, up, view);
 
 		float mvp[16];
@@ -80,16 +86,14 @@ int main(int argc, char* argv[]) {
 		glUseProgram(pID);
 
 		glUniformMatrix4fv(mvpID, 1, GL_FALSE, mvp);
-		glUniform1f(tID, (float)glfwGetTime());
+		glUniform1i(circleTexID, 0);
 
 		glBindVertexArray(vao);
 		glEnableVertexAttribArray(0);
-		glEnableVertexAttribArray(1);
 
 		glDrawArrays(GL_POINTS, 0, 3);
 
 		glDisableVertexAttribArray(0);
-		glDisableVertexAttribArray(1);
 		glBindVertexArray(0);
 
 		glfwSwapBuffers(window);
@@ -176,10 +180,10 @@ GLuint init_vao(GLuint* circlebuffer, GLuint* timebuffer) {
 	glGenVertexArrays(1, &vao);
 	glBindVertexArray(vao);
 
-	GLfloat circle_data[6] = {
-		0.0f, 0.0f,
-		5.0f, 5.0f,
-		-5.0f, -5.0f
+	GLfloat circle_data[] = {
+		0.0f, 0.0f, 3.0f,
+		15.0f, 15.0f, 5.0f,
+		-15.0f, -15.0f, 8.0f
 	};
 	glGenBuffers(1, circlebuffer);
 	glBindBuffer(GL_ARRAY_BUFFER, *circlebuffer);
@@ -189,23 +193,50 @@ GLuint init_vao(GLuint* circlebuffer, GLuint* timebuffer) {
 		&circle_data[0],
 		GL_STATIC_DRAW
 	);
-	glVertexAttribPointer(0, 2, GL_FLOAT, GL_FALSE, 0, (void*)0);
-
-	// corrupted data!
-	GLfloat time_data[3] = { 3.0f, 5.0f, 8.0f };
-	glGenBuffers(1, timebuffer);
-	glBindBuffer(GL_ARRAY_BUFFER, *timebuffer);
-	glBufferData(
-		GL_ARRAY_BUFFER,
-		sizeof(time_data),
-		&time_data[0],
-		GL_STATIC_DRAW
-	);
-	glVertexAttribPointer(1, 1, GL_FLOAT, GL_FALSE, 0, (void*)0);
+	glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 0, (void*)0);
 
 	glBindBuffer(GL_ARRAY_BUFFER, 0);
-
 	glBindVertexArray(0);
 	
 	return vao;
+}
+
+INCBIN(CircleImage, "textures/hitcircle@2x.png");
+void init_textures(GLuint* circleTexture) {
+	unsigned error;
+	unsigned char* circle_data;
+	unsigned circle_width, circle_height;
+
+	error = lodepng_decode32(
+		&circle_data, 
+		&circle_width, 
+		&circle_height, 
+		gCircleImageData, 
+		gCircleImageSize
+	);
+
+	printf("%d\n", circle_width);
+	printf("%d\n", circle_height);
+
+	glGenTextures(1, circleTexture);
+
+	glActiveTexture(GL_TEXTURE0);
+	glBindTexture(GL_TEXTURE_2D, *circleTexture);
+
+	glTexImage2D(
+		GL_TEXTURE_2D, 
+		0, 
+		GL_RGBA, 
+		circle_width, 
+		circle_height, 
+		0,
+		GL_RGBA, 
+		GL_UNSIGNED_BYTE, 
+		circle_data
+	);
+
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+
+	free(circle_data);
 }
