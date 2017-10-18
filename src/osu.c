@@ -70,18 +70,30 @@ int main(int argc, char* argv[]) {
 		glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
 		float projection[16];
-		mat4_ortho(-WIDTH/2.0f/10, WIDTH/2.0f/10, -HEIGHT/2.0f/10, HEIGHT/2.0f/10, 0.0f, 1.0f, projection);
-		//mat4_perspective(1.5f, 16.0f / 9.0f, 1.0f, 1000.0f, projection);
+		mat4_ortho(
+			-WIDTH/2.0f/10, 
+			WIDTH/2.0f/10, 
+			-HEIGHT/2.0f/10, 
+			HEIGHT/2.0f/10, 
+			0.0f, 
+			10.0f, 
+			projection
+		);
 
-		float eye[3] = { 0.0f, 0.0f, -3.0f };
-		float center[3] = { 0.0f, 0.0f, 0.0f };
+		float eye[3] = { 0.0f, 0.0f, 0.0f };
+		float center[3] = { 0.0f, 0.0f, 1.0f };
 		float up[3] = { 0.0f, 1.0f, 0.0f };
 		float view[16];
-		eye[2] = (float)glfwGetTime() - 3.0f;
 		mat4_lookAt(eye, center, up, view);
+
+		float model[16];
+		float translation[3] = { 0.0f, 0.0f, -(float)glfwGetTime() };
+		mat4_identity(model);
+		mat4_translate(model, translation, model);
 
 		float mvp[16];
 		mat4_multiply(projection, view, mvp);
+		mat4_multiply(mvp, model, mvp);
 
 		glUseProgram(pID);
 
@@ -181,9 +193,9 @@ GLuint init_vao(GLuint* circlebuffer, GLuint* timebuffer) {
 	glBindVertexArray(vao);
 
 	GLfloat circle_data[] = {
-		0.0f, 0.0f, 3.0f,
-		15.0f, 15.0f, 5.0f,
-		-15.0f, -15.0f, 8.0f
+		0.0f, 0.0f, 13.0f,
+		15.0f, 15.0f, 15.0f,
+		-15.0f, -15.0f, 18.0f
 	};
 	glGenBuffers(1, circlebuffer);
 	glBindBuffer(GL_ARRAY_BUFFER, *circlebuffer);
@@ -201,7 +213,7 @@ GLuint init_vao(GLuint* circlebuffer, GLuint* timebuffer) {
 	return vao;
 }
 
-INCBIN(CircleImage, "textures/hitcircle@2x.png");
+INCBIN(CircleImage, "textures/hitcircleoverlay@2x.png");
 void init_textures(GLuint* circleTexture) {
 	unsigned error;
 	unsigned char* circle_data;
