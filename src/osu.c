@@ -89,7 +89,7 @@ int main(int argc, char* argv[]) {
 		float model[16];
 		float translation[3] = { 0.0f, 0.0f, -(float)glfwGetTime() };
 		mat4_identity(model);
-		mat4_translate(model, translation, model);
+		//mat4_translate(model, translation, model);
 
 		float mvp[16];
 		mat4_multiply(projection, view, mvp);
@@ -166,7 +166,7 @@ GLuint init_shader_program() {
 	if (success == GL_FALSE) {
 		glGetShaderiv(fsID, GL_INFO_LOG_LENGTH, &logSize);
 
-		char* log = malloc(logSize);
+	char* log = malloc(logSize);
 		glGetShaderInfoLog(fsID, logSize, &logSize, log);
 
 		printf("fs");
@@ -193,9 +193,9 @@ GLuint init_vao(GLuint* circlebuffer, GLuint* timebuffer) {
 	glBindVertexArray(vao);
 
 	GLfloat circle_data[] = {
-		0.0f, 0.0f, 13.0f,
-		15.0f, 15.0f, 15.0f,
-		-15.0f, -15.0f, 18.0f
+		0.0f, 0.0f, 3.0f,
+		15.0f, 15.0f, 5.0f,
+		-15.0f, -15.0f, 8.0f
 	};
 	glGenBuffers(1, circlebuffer);
 	glBindBuffer(GL_ARRAY_BUFFER, *circlebuffer);
