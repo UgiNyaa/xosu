@@ -5,7 +5,6 @@
 #include <GLFW/glfw3.h>
 
 #include "gl-matrix.h"
-#include "incbin.h"
 #include "lodepng.h"
 
 #define WIDTH 1280
@@ -113,17 +112,46 @@ int main(int argc, char* argv[]) {
 	}
 }
 
-INCBIN(VertexShader, "glsl/vs.glsl");
-INCBIN(GeometryShader, "glsl/gs.glsl");
-INCBIN(FragmentShader, "glsl/fs.glsl");
 GLuint init_shader_program() {
 	GLint success = 0, logSize = 0;
 	GLuint vsID = glCreateShader(GL_VERTEX_SHADER);
 	GLuint gsID = glCreateShader(GL_GEOMETRY_SHADER);
 	GLuint fsID = glCreateShader(GL_FRAGMENT_SHADER);
 
-	const char* vs_code[1] = {gVertexShaderData};
-	glShaderSource(vsID, 1, vs_code, &gVertexShaderSize);
+
+	FILE* fvs = fopen("resources/glsl/vs.glsl", "rb");
+	FILE* fgs = fopen("resources/glsl/gs.glsl", "rb");
+	FILE* ffs = fopen("resources/glsl/fs.glsl", "rb");
+
+	fseek(fvs, 0L, SEEK_END);
+	fseek(fgs, 0L, SEEK_END);
+	fseek(ffs, 0L, SEEK_END);
+
+	int vs_size = ftell(fvs);
+	int gs_size = ftell(fgs);
+	int fs_size = ftell(ffs);
+	
+	fseek(fvs, 0L, SEEK_SET);
+	fseek(fgs, 0L, SEEK_SET);
+	fseek(ffs, 0L, SEEK_SET);
+
+	char* vs_code = malloc(vs_size * sizeof(char) + 1);
+	char* gs_code = malloc(gs_size * sizeof(char) + 1);
+	char* fs_code = malloc(fs_size * sizeof(char) + 1);
+
+	fread(vs_code, sizeof(char), vs_size, fvs);
+	fread(gs_code, sizeof(char), gs_size, fgs);
+	fread(fs_code, sizeof(char), fs_size, ffs);
+	vs_code[vs_size] = '\0';
+	gs_code[gs_size] = '\0';
+	fs_code[fs_size] = '\0';
+
+	fclose(fvs);
+	fclose(fgs);
+	fclose(ffs);
+
+	//const char* vs_code[1] = {gVertexShaderData};
+	glShaderSource(vsID, 1, &vs_code, &vs_size);
 	glCompileShader(vsID);
 
 	glGetShaderiv(vsID, GL_COMPILE_STATUS, &success);
@@ -133,15 +161,15 @@ GLuint init_shader_program() {
 		char* log = malloc(logSize);
 		glGetShaderInfoLog(vsID, logSize, &logSize, log);
 
-		printf("vs");
+		printf("vs: \n");
 		printf(log);
 		free(log);
 
 		exit(-1);
 	}
 
-	const char* gs_code[1] = {gGeometryShaderData};
-	glShaderSource(gsID, 1, gs_code, &gGeometryShaderSize);
+	//const char* gs_code[1] = {gGeometryShaderData};
+	glShaderSource(gsID, 1, &gs_code, &gs_size);
 	glCompileShader(gsID);
 
 	glGetShaderiv(gsID, GL_COMPILE_STATUS, &success);
@@ -151,15 +179,15 @@ GLuint init_shader_program() {
 		char* log = malloc(logSize);
 		glGetShaderInfoLog(gsID, logSize, &logSize, log);
 
-		printf("gs");
+		printf("gs: \n");
 		printf(log);
 		free(log);
 
 		exit(-1);
 	}
 
-	const char* fs_code[1] = {gFragmentShaderData};
-	glShaderSource(fsID, 1, fs_code, &gFragmentShaderSize);
+	//const char* fs_code[1] = {gFragmentShaderData};
+	glShaderSource(fsID, 1, &fs_code, &fs_size);
 	glCompileShader(fsID);
 
 	glGetShaderiv(fsID, GL_COMPILE_STATUS, &success);
@@ -169,7 +197,7 @@ GLuint init_shader_program() {
 	char* log = malloc(logSize);
 		glGetShaderInfoLog(fsID, logSize, &logSize, log);
 
-		printf("fs");
+		printf("fs: \n");
 		printf(log);
 		free(log);
 
@@ -182,6 +210,10 @@ GLuint init_shader_program() {
 	glAttachShader(pID, gsID);
 	glAttachShader(pID, fsID);
 	glLinkProgram(pID);
+
+	free(vs_code);
+	free(gs_code);
+	free(fs_code);
 
 	return pID;
 }
@@ -213,18 +245,16 @@ GLuint init_vao(GLuint* circlebuffer, GLuint* timebuffer) {
 	return vao;
 }
 
-INCBIN(CircleImage, "textures/hitcircleoverlay@2x.png");
 void init_textures(GLuint* circleTexture) {
 	unsigned error;
 	unsigned char* circle_data;
 	unsigned circle_width, circle_height;
 
-	error = lodepng_decode32(
+	error = lodepng_decode32_file(
 		&circle_data, 
 		&circle_width, 
-		&circle_height, 
-		gCircleImageData, 
-		gCircleImageSize
+		&circle_height,
+		"resources/textures/hitcircleoverlay@2x.png"
 	);
 
 	printf("%d\n", circle_width);

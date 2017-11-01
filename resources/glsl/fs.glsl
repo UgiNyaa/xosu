@@ -9,4 +9,3 @@ out vec4 color;
 void main() {
 	color = texture(circleTexture, fs_uv);
 }
-
