@@ -74,17 +74,46 @@ int main(int argc, char* argv[]) {
 	init_textures(&hitc_tex, GL_TEXTURE0, "resources/textures/hitcircleoverlay@2x.png");
 	init_textures(&hitc_tex, GL_TEXTURE1, "resources/textures/approachcircle@2x.png");
 
-	GLuint circle_mvpID = glGetUniformLocation(circle_program, "MVP");
+	struct {
+		// model view projection
+		float mvp[16];
+		// how much time has passed
+		float time;
+		// circle size
+		float cs;
+		// approach rate
+		float ar;
+		// hit window
+		float hw;
+	} shader_data;
+
+	shader_data.cs = 50.0f;
+	shader_data.ar = 1.0f;
+	shader_data.hw = 0.1f;
+
+	GLuint ubo = 0;
+	glGenBuffers(1, &ubo);
+	glBindBuffer(GL_UNIFORM_BUFFER, ubo);
+	glBufferData(GL_UNIFORM_BUFFER, sizeof(shader_data), &shader_data, GL_DYNAMIC_DRAW);
+	glBindBuffer(GL_UNIFORM_BUFFER, 0);
+
 	GLuint circle_texID = glGetUniformLocation(circle_program, "tex");
-	GLuint circle_timeID = glGetUniformLocation(circle_program, "time");
+	//GLuint circle_mvpID = glGetUniformLocation(circle_program, "MVP");
+	//GLuint circle_timeID = glGetUniformLocation(circle_program, "time");
 
-	GLuint approach_mvpID = glGetUniformLocation(approach_program, "MVP");
 	GLuint approach_texID = glGetUniformLocation(approach_program, "tex");
-	GLuint approach_timeID = glGetUniformLocation(approach_program, "time");
+	//GLuint approach_mvpID = glGetUniformLocation(approach_program, "MVP");
+	//GLuint approach_timeID = glGetUniformLocation(approach_program, "time");
 
-	int circle_off = 0;
-	int circle_span = 0;
-	float ar = 1;
+	{
+		glBindBufferBase(GL_UNIFORM_BUFFER, 0, ubo);
+
+		GLuint circle_ubo = glGetUniformBlockIndex(circle_program, "shader_data");
+		GLuint approach_ubo = glGetUniformBlockIndex(approach_program, "shader_data");
+
+		glUniformBlockBinding(circle_program, circle_ubo, 0);
+		glUniformBlockBinding(approach_program, approach_ubo, 0);
+	}
 
 	glfwSetTime(0.0);
 	for (;;) {
@@ -107,8 +136,16 @@ int main(int argc, char* argv[]) {
 		float view[16];
 		mat4_lookAt(eye, center, up, view);
 
-		float mvp[16];
-		mat4_multiply(projection, view, mvp);
+		mat4_multiply(projection, view, shader_data.mvp);
+
+		shader_data.time = (float)glfwGetTime();
+
+		{
+			glBindBuffer(GL_UNIFORM_BUFFER, ubo);
+			GLvoid* p = glMapBuffer(GL_UNIFORM_BUFFER, GL_WRITE_ONLY);
+			memcpy(p, &shader_data, sizeof(shader_data));
+			glUnmapBuffer(GL_UNIFORM_BUFFER);
+		}
 
 		glBindVertexArray(circle_vao);
 		glEnableVertexAttribArray(0);
@@ -118,8 +155,8 @@ int main(int argc, char* argv[]) {
 			glUseProgram(circle_program);
 
 			glUniform1i(circle_texID, 0);
-			glUniformMatrix4fv(circle_mvpID, 1, GL_FALSE, mvp);
-			glUniform1f(circle_timeID, (float)glfwGetTime());
+			//glUniformMatrix4fv(circle_mvpID, 1, GL_FALSE, shader_data.mvp);
+			//glUniform1f(circle_timeID, shader_data.time);
 
 			glDrawArrays(GL_POINTS, 0, CIRCLE_BUFFER_SIZE);
 		}
@@ -129,8 +166,8 @@ int main(int argc, char* argv[]) {
 			glUseProgram(approach_program);
 		
 			glUniform1i(approach_texID, 1);
-			glUniformMatrix4fv(approach_mvpID, 1, GL_FALSE, mvp);
-			glUniform1f(approach_timeID, (float)glfwGetTime());
+			//glUniformMatrix4fv(approach_mvpID, 1, GL_FALSE, shader_data.mvp);
+			//glUniform1f(approach_timeID, shader_data.time);
 
 			glDrawArrays(GL_POINTS, 0, CIRCLE_BUFFER_SIZE);
 		}

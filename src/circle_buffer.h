@@ -10,9 +10,9 @@ typedef struct {
 #define CIRCLE_BUFFER_SIZE 3
 
 static const Circle circle_buffer[CIRCLE_BUFFER_SIZE] = {
-	{ 96.0f, 96.0f, 2.225f },
-	{128.0f, 352.0f, 2.525f},
-	{ 224.0f, 192.0f, 2.675f }
+	{ 200.0f, 0.0f, 2.0f },
+	{ 0.0f, 0.0f, 2.5f},
+	{ -200.0f, 0.0f, 3.0f }
 };
 
 #endif
