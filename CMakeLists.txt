@@ -20,5 +20,9 @@ find_package(GLFW REQUIRED)
 include_directories(${GLFW_INCLUDE_DIRS})
 set(LIBS ${LIBS} ${GLFW_LIBRARIES})
 
+if(UNIX)
+	set(LIBS ${LIBS} m)
+endif()
+
 add_executable(osu ${osu_SOURCES} ${osu_HEADERS})
 target_link_libraries(osu ${LIBS})

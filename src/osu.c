@@ -7,6 +7,7 @@
 #include "gl-matrix.h"
 #include "lodepng.h"
 #include "circle_buffer.h"
+#include "linear_slider_buffer.h"
 
 #define WIDTH 1280
 #define HEIGHT 720
@@ -54,8 +55,21 @@ int main(int argc, char* argv[]) {
 	glEnable(GL_BLEND);
 	glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
 
-	GLuint circle_program = init_program("resources/glsl/circle.vert", "resources/glsl/circle.geom", "resources/glsl/circle.frag");
-	GLuint approach_program = init_program("resources/glsl/approach.vert", "resources/glsl/approach.geom", "resources/glsl/approach.frag");
+	GLuint circle_program = init_program(
+		"resources/glsl/circle.vert", 
+		"resources/glsl/circle.geom", 
+		"resources/glsl/circle.frag"
+	);
+	GLuint approach_program = init_program(
+		"resources/glsl/approach.vert", 
+		"resources/glsl/approach.geom", 
+		"resources/glsl/approach.frag"
+	);
+	GLuint linear_slider_program = init_program(
+		"resources/glsl/linear_slider.vert",
+		"resources/glsl/linear_slider.geom",
+		"resources/glsl/linear_slider.frag"
+	);
 
 	GLuint circle_vao;
 	glGenVertexArrays(1, &circle_vao);
@@ -64,10 +78,26 @@ int main(int argc, char* argv[]) {
 	GLuint circle_buf;
 	glGenBuffers(1, &circle_buf);
 	glBindBuffer(GL_ARRAY_BUFFER, circle_buf);
-	glBufferData(GL_ARRAY_BUFFER, sizeof(circle_buffer), circle_buffer, GL_STATIC_DRAW);
+	glBufferData(
+		GL_ARRAY_BUFFER, 
+		sizeof(circle_buffer), 
+		circle_buffer, 
+		GL_STATIC_DRAW
+	);
 	glVertexAttribPointer(0, 3, GL_FLOAT, 0, 0, (void*)0);
-	glBindBuffer(GL_ARRAY_BUFFER, 0);
 
+	GLuint linear_slider_buf;
+	glGenBuffers(1, &linear_slider_buf);
+	glBindBuffer(GL_ARRAY_BUFFER, linear_slider_buf);
+	glBufferData(
+		GL_ARRAY_BUFFER, 
+		sizeof(linear_slider_buffer), 
+		linear_slider_buffer, 
+		GL_STATIC_DRAW
+	);
+	glVertexAttribPointer(1, 3, GL_FLOAT, 0, 0, (void*)0);
+
+	glBindBuffer(GL_ARRAY_BUFFER, 0);
 	glBindVertexArray(0);
 
 	GLuint hitc_tex, appr_tex;
@@ -115,9 +145,13 @@ int main(int argc, char* argv[]) {
 		glUniformBlockBinding(approach_program, approach_ubo, 0);
 	}
 
+	int open = 1;
 	glfwSetTime(0.0);
-	for (;;) {
+	while (open) {
 		glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+
+		if (glfwGetKey(window, GLFW_KEY_ESCAPE) == GLFW_PRESS)
+			open = 0;
 
 		float projection[16];
 		mat4_ortho(
@@ -149,6 +183,7 @@ int main(int argc, char* argv[]) {
 
 		glBindVertexArray(circle_vao);
 		glEnableVertexAttribArray(0);
+		glEnableVertexAttribArray(1);
 
 		// hit circle drawing
 		{
@@ -158,7 +193,7 @@ int main(int argc, char* argv[]) {
 			//glUniformMatrix4fv(circle_mvpID, 1, GL_FALSE, shader_data.mvp);
 			//glUniform1f(circle_timeID, shader_data.time);
 
-			glDrawArrays(GL_POINTS, 0, CIRCLE_BUFFER_SIZE);
+			glDrawArrays(GL_POINTS, 0, CIRCLE_BUFFER_SIZE / 3);
 		}
 
 		// approach circle drawing
@@ -169,10 +204,18 @@ int main(int argc, char* argv[]) {
 			//glUniformMatrix4fv(approach_mvpID, 1, GL_FALSE, shader_data.mvp);
 			//glUniform1f(approach_timeID, shader_data.time);
 
-			glDrawArrays(GL_POINTS, 0, CIRCLE_BUFFER_SIZE);
+			glDrawArrays(GL_POINTS, 0, CIRCLE_BUFFER_SIZE / 3);
+		}
+
+		// linear slider drawing
+		{
+			glUseProgram(linear_slider_program);
+
+			glDrawArrays(GL_LINES, 0, LINEAR_SLIDER_BUFFER_SIZE / 3);
 		}
 
 		glDisableVertexAttribArray(0);
+		glDisableVertexAttribArray(1);
 
 		glfwSwapBuffers(window);
 		glfwPollEvents();
@@ -226,7 +269,7 @@ GLuint init_program(const char* vs_path, const char* gs_path, const char* fs_pat
 		char* log = malloc(logSize);
 		glGetShaderInfoLog(vsID, logSize, &logSize, log);
 
-		printf("vs: \n");
+		printf("%s: \n", vs_path);
 		printf(log);
 		free(log);
 
@@ -243,7 +286,7 @@ GLuint init_program(const char* vs_path, const char* gs_path, const char* fs_pat
 		char* log = malloc(logSize);
 		glGetShaderInfoLog(gsID, logSize, &logSize, log);
 
-		printf("gs: \n");
+		printf("%s: \n", gs_path);
 		printf(log);
 		free(log);
 
@@ -260,7 +303,7 @@ GLuint init_program(const char* vs_path, const char* gs_path, const char* fs_pat
 		char* log = malloc(logSize);
 		glGetShaderInfoLog(fsID, logSize, &logSize, log);
 
-		printf("fs: \n");
+		printf("%s: \n", fs_path);
 		printf(log);
 		free(log);
 
