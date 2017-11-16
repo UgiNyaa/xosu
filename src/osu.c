@@ -71,34 +71,37 @@ int main(int argc, char* argv[]) {
 		"resources/glsl/linear_slider.frag"
 	);
 
-	GLuint circle_vao;
-	glGenVertexArrays(1, &circle_vao);
-	glBindVertexArray(circle_vao);
+	GLuint circle_vao, slider_vao;
+	GLuint circle_buf, linear_slider_buf;
+	{
+		glGenVertexArrays(1, &circle_vao);
+		glGenVertexArrays(1, &slider_vao);
 
-	GLuint circle_buf;
-	glGenBuffers(1, &circle_buf);
-	glBindBuffer(GL_ARRAY_BUFFER, circle_buf);
-	glBufferData(
-		GL_ARRAY_BUFFER, 
-		sizeof(circle_buffer), 
-		circle_buffer, 
-		GL_STATIC_DRAW
-	);
-	glVertexAttribPointer(0, 3, GL_FLOAT, 0, 0, (void*)0);
+		glBindVertexArray(circle_vao);
+		glGenBuffers(1, &circle_buf);
+		glBindBuffer(GL_ARRAY_BUFFER, circle_buf);
+		glBufferData(
+			GL_ARRAY_BUFFER, 
+			sizeof(circle_buffer), 
+			circle_buffer, 
+			GL_STATIC_DRAW
+		);
+		glVertexAttribPointer(0, 3, GL_FLOAT, 0, 0, (void*)0);
 
-	GLuint linear_slider_buf;
-	glGenBuffers(1, &linear_slider_buf);
-	glBindBuffer(GL_ARRAY_BUFFER, linear_slider_buf);
-	glBufferData(
-		GL_ARRAY_BUFFER, 
-		sizeof(linear_slider_buffer), 
-		linear_slider_buffer, 
-		GL_STATIC_DRAW
-	);
-	glVertexAttribPointer(1, 3, GL_FLOAT, 0, 0, (void*)0);
+		glBindVertexArray(slider_vao);
+		glGenBuffers(1, &linear_slider_buf);
+		glBindBuffer(GL_ARRAY_BUFFER, linear_slider_buf);
+		glBufferData(
+			GL_ARRAY_BUFFER, 
+			sizeof(linear_slider_buffer), 
+			linear_slider_buffer, 
+			GL_STATIC_DRAW
+		);
+		glVertexAttribPointer(0, 3, GL_FLOAT, 0, 0, (void*)0);
 
-	glBindBuffer(GL_ARRAY_BUFFER, 0);
-	glBindVertexArray(0);
+		glBindBuffer(GL_ARRAY_BUFFER, 0);
+		glBindVertexArray(0);
+	}
 
 	GLuint hitc_tex, appr_tex;
 	init_textures(&hitc_tex, GL_TEXTURE0, "resources/textures/hitcircleoverlay@2x.png");
@@ -181,41 +184,50 @@ int main(int argc, char* argv[]) {
 			glUnmapBuffer(GL_UNIFORM_BUFFER);
 		}
 
-		glBindVertexArray(circle_vao);
-		glEnableVertexAttribArray(0);
-		glEnableVertexAttribArray(1);
-
-		// hit circle drawing
+		// circle vao rendering
 		{
-			glUseProgram(circle_program);
+			glBindVertexArray(circle_vao);
+			glEnableVertexAttribArray(0);
 
-			glUniform1i(circle_texID, 0);
-			//glUniformMatrix4fv(circle_mvpID, 1, GL_FALSE, shader_data.mvp);
-			//glUniform1f(circle_timeID, shader_data.time);
+			// hit circle drawing
+			{
+				glUseProgram(circle_program);
 
-			glDrawArrays(GL_POINTS, 0, CIRCLE_BUFFER_SIZE / 3);
+				glUniform1i(circle_texID, 0);
+				//glUniformMatrix4fv(circle_mvpID, 1, GL_FALSE, shader_data.mvp);
+				//glUniform1f(circle_timeID, shader_data.time);
+
+				glDrawArrays(GL_POINTS, 0, CIRCLE_BUFFER_SIZE / 3);
+			}
+
+			// approach circle drawing
+			{
+				glUseProgram(approach_program);
+			
+				glUniform1i(approach_texID, 1);
+				//glUniformMatrix4fv(approach_mvpID, 1, GL_FALSE, shader_data.mvp);
+				//glUniform1f(approach_timeID, shader_data.time);
+
+				glDrawArrays(GL_POINTS, 0, CIRCLE_BUFFER_SIZE / 3);
+			}
+
+			glDisableVertexAttribArray(0);
 		}
 
-		// approach circle drawing
+		// slider vao rendering
 		{
-			glUseProgram(approach_program);
-		
-			glUniform1i(approach_texID, 1);
-			//glUniformMatrix4fv(approach_mvpID, 1, GL_FALSE, shader_data.mvp);
-			//glUniform1f(approach_timeID, shader_data.time);
+			glBindVertexArray(slider_vao);
+			glEnableVertexAttribArray(0);
 
-			glDrawArrays(GL_POINTS, 0, CIRCLE_BUFFER_SIZE / 3);
+			// linear slider drawing
+			{
+				glUseProgram(linear_slider_program);
+
+				glDrawArrays(GL_LINES, 0, LINEAR_SLIDER_BUFFER_SIZE / 3);
+			}
+
+			glDisableVertexAttribArray(0);
 		}
-
-		// linear slider drawing
-		{
-			glUseProgram(linear_slider_program);
-
-			glDrawArrays(GL_LINES, 0, LINEAR_SLIDER_BUFFER_SIZE / 3);
-		}
-
-		glDisableVertexAttribArray(0);
-		glDisableVertexAttribArray(1);
 
 		glfwSwapBuffers(window);
 		glfwPollEvents();

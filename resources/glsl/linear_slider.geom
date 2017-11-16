@@ -3,7 +3,7 @@
 layout(lines) in;
 layout(triangle_strip, max_vertices = 4) out;
 
-layout(std140) uniform shader_data {
+layout (std140) uniform shader_data {
 	mat4 mvp;
 	float time;
 	float cs;
@@ -11,46 +11,46 @@ layout(std140) uniform shader_data {
 	float hw;
 };
 
-//out vec2 fs_uv;
-//out vec2 fs_uv_begin;
-//out vec2 fs_uv_end;
-
-//out float fs_t_begin;
-//out float fs_t_end;
-
 void main() {
-	float maxx = max(gl_in[0].gl_Position.x+cs, gl_in[1].gl_Position.x+cs);
-	float minx = min(gl_in[0].gl_Position.x-cs, gl_in[1].gl_Position.x-cs);
-	float maxy = max(gl_in[0].gl_Position.y+cs, gl_in[1].gl_Position.y+cs);
-	float miny = min(gl_in[0].gl_Position.y-cs, gl_in[1].gl_Position.y-cs);
-	float minz = gl_in[0].gl_Position.z;
-	float maxz = gl_in[1].gl_Position.z;
+	//vec4 pos = gl_in[1].gl_Position;
+	//vec4 min_min = pos + vec4(-cs, -cs, 0.0, 0.0);
+	//vec4 min_max = pos + vec4(-cs, +cs, 0.0, 0.0);
+	//vec4 max_min = pos + vec4(+cs, -cs, 0.0, 0.0);
+	//vec4 max_max = pos + vec4(+cs, +cs, 0.0, 0.0);
 
-	//fs_uv_begin = vec2(
-	//	(gl_in[0].gl_Position.x - minx) / (maxx - minx),
-	//	(gl_in[0].gl_Position.y - miny) / (maxy - miny)
-	//);
-	//fs_uv_end = vec2(
-	//	(gl_in[1].gl_Position.x - minx) / (maxx - minx),
-	//	(gl_in[1].gl_Position.y - miny) / (maxy - miny)
-	//);
-	//fs_t_begin = gl_in[0].gl_Position.z;
-	//fs_t_end = gl_in[1].gl_Position.z;
-	
-	gl_Position = mvp * vec4(minx, miny, minz, 0.0);
-	//fs_uv = vec2(0.0, 0.0);
+	vec4 bgn = gl_in[0].gl_Position;
+	vec4 end = gl_in[1].gl_Position;
+	vec4 min_min = vec4(
+		min(bgn.x, end.x) - cs,
+		min(bgn.y, end.y) - cs,
+		bgn.z, bgn.w
+	);
+	vec4 min_max = vec4(
+		min(bgn.x, end.x) - cs,
+		max(bgn.y, end.y) + cs,
+		bgn.z, bgn.w
+	);
+	vec4 max_min = vec4(
+		max(bgn.x, end.x) + cs,
+		min(bgn.y, end.y) - cs,
+		bgn.z, bgn.w
+	);
+	vec4 max_max = vec4(
+		max(bgn.x, end.x) + cs,
+		max(bgn.y, end.y) + cs,
+		bgn.z, bgn.w
+	);
+
+	gl_Position = mvp * min_min;
 	EmitVertex();
 
-	gl_Position = mvp * vec4(minx, maxy, minz, 0.0);
-	//fs_uv = vec2(0.0, 1.0);
+	gl_Position = mvp * min_max;
 	EmitVertex();
 
-	gl_Position = mvp * vec4(maxx, miny, minz, 0.0);
-	//fs_uv = vec2(1.0, 0.0);
+	gl_Position = mvp * max_min;
 	EmitVertex();
 
-	gl_Position = mvp * vec4(maxx, maxy, minz, 0.0);
-	//fs_uv = vec2(1.0, 1.0);
+	gl_Position = mvp * max_max;
 	EmitVertex();
 
 	EndPrimitive();
